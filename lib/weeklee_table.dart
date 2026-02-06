@@ -522,23 +522,43 @@ class _WeekleeTableState extends State<WeekleeTable> {
             ? theme.selectedRowDecoration
             : (isHovered ? theme.hoveredRowDecoration : theme.rowDecoration));
 
-    if (theme.enableHoverEffect) {
+    final hasTapHandlers = widget.onRowTap != null ||
+        widget.onRowDoubleTap != null ||
+        widget.onRowLongPress != null ||
+        row.onTap != null;
+
+    if (theme.enableHoverEffect || hasTapHandlers) {
       return TableRow(
         decoration: decoration,
         children: cells.map((cell) {
-          return MouseRegion(
-            onEnter: (_) => setState(() => _hoveredRows[index] = true),
-            onExit: (_) => setState(() => _hoveredRows[index] = false),
-            child: GestureDetector(
+          Widget child = cell;
+
+          if (hasTapHandlers) {
+            child = GestureDetector(
+              behavior: HitTestBehavior.opaque,
               onTap: () {
                 widget.onRowTap?.call(index);
                 row.onTap?.call();
               },
-              onDoubleTap: () => widget.onRowDoubleTap?.call(index),
-              onLongPress: () => widget.onRowLongPress?.call(index),
-              child: cell,
-            ),
-          );
+              onDoubleTap: widget.onRowDoubleTap != null
+                  ? () => widget.onRowDoubleTap?.call(index)
+                  : null,
+              onLongPress: widget.onRowLongPress != null
+                  ? () => widget.onRowLongPress?.call(index)
+                  : null,
+              child: child,
+            );
+          }
+
+          if (theme.enableHoverEffect) {
+            child = MouseRegion(
+              onEnter: (_) => setState(() => _hoveredRows[index] = true),
+              onExit: (_) => setState(() => _hoveredRows[index] = false),
+              child: child,
+            );
+          }
+
+          return child;
         }).toList(),
       );
     }
